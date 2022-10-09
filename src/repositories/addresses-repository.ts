@@ -9,7 +9,7 @@ let addresses = [
     },
 ];
 
-export const addressesRepository = {
+export const addressesDbRepository = {
     findAddresses() {
         return addresses;
     },

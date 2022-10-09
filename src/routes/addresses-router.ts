@@ -1,11 +1,10 @@
 import {Request, Response, Router} from "express";
-import {addressesRepository} from "../repositories/addresses-repository";
-
+import {addressesDbRepository} from "../repositories/addresses-repository";
 
 export const adressesRouter = Router({});
 
 adressesRouter.get('/', (req: Request, res: Response) => {
-    const addresses = addressesRepository.findAddresses();
+    const addresses = addressesDbRepository.findAddresses();
     res.send(addresses);
 });
 adressesRouter.delete('/:id', (req: Request, res: Response) => {
@@ -14,7 +13,7 @@ adressesRouter.delete('/:id', (req: Request, res: Response) => {
         return;
     }
 
-    const isDeleted = addressesRepository.deleteAddress(+req.params.id);
+    const isDeleted = addressesDbRepository.deleteAddress(+req.params.id);
 
     if (isDeleted) {
         res.sendStatus(204);

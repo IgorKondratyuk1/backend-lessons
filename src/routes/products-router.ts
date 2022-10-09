@@ -1,59 +1,65 @@
 import {Request, Response, Router} from "express";
-import {productsRepository} from "../repositories/products-repository";
-import {body, validationResult} from "express-validator";
-import {inputValidationMiddleware} from "../middlewares/input-validation-middleware";
+import {postValidationSchema} from "../shemas/post-schema";
+import {authenticationMiddleware} from "../middlewares/authentication-middleware";
+import {ProductType, RequestWithBody, RequestWithBodyAndParams, RequestWithParams} from "../types/types";
+import {ProductViewModel} from "../models/post/product-view-model";
+import {getProductViewModel} from "../helpers/helpers";
+import {UriParamsProductModel} from "../models/post/uri-params-product-model";
+import {CreateProductModel} from "../models/post/create-product-model";
+import {UpdateProductModel} from "../models/post/update-product-model";
+import {productsService} from "../domain/product-service";
 
 export const productsRouter = Router({});
 
-const titleValidation = body("title", )
-    // .exists({checkFalsy: true}).withMessage("Field title is not exist or value is falsy")
-    .isString().withMessage("Not string")
-    .notEmpty({ignore_whitespace: true}).withMessage("Field title is empty")
-    .trim()
-    .isLength({min: 3, max: 10}).withMessage("Min length 3 and max length 10 symbols");
+productsRouter.get('/', async (req: Request, res: Response<ProductViewModel[]>) => {
+    const productsResult: ProductType[] = await productsService.findProducts(req.query.title?.toString());
 
-productsRouter.get('/', (req: Request, res: Response) => {
-    const productsResult = productsRepository.findProducts(req.query.title?.toString(),
-        typeof(req.query.count) === "number" ? req.query.count : null);
-
-    res.send(productsResult);
+    res.send(productsResult.map(getProductViewModel));
 });
-productsRouter.get('/:id', (req: Request, res: Response) => {
-    const product = productsRepository.findProductById(+req.params.id);
+productsRouter.get('/:id', async (req: RequestWithParams<UriParamsProductModel>, res: Response) => {
+    const product: ProductType | null = await productsService.findProductById(+req.params.id);
 
     if (product) {
-        res.send(product);
+        res.send(getProductViewModel(product));
     } else {
         res.sendStatus(404);
     }
 });
-
 productsRouter.post('/',
-    titleValidation,
-    inputValidationMiddleware,
-    (req: Request, res: Response) => {
-        const createdProduct = productsRepository.createProduct(req.body.title.toString());
+    authenticationMiddleware,
+    postValidationSchema,
+    async (req: RequestWithBody<CreateProductModel>, res: Response<ProductViewModel>) => {
+        const createdProduct: ProductType = await productsService.createProduct(req.body.title.toString());
 
         res.status(201)
-            .json(createdProduct);
+            .json(getProductViewModel(createdProduct));
 });
-productsRouter.put('/:id', (req: Request, res: Response) => {
+productsRouter.put('/:id',
+    authenticationMiddleware,
+    postValidationSchema,
+    async (req: RequestWithBodyAndParams<UriParamsProductModel, UpdateProductModel>, res: Response<ProductViewModel>) => {
     if (!req.body.title) {
         res.sendStatus(400);
         return;
     }
 
-   const isUpdated = productsRepository.updateProduct(+req.params.id, req.body.title);
+   const isUpdated: boolean = await productsService.updateProduct(+req.params.id, req.body.title);
 
     if (isUpdated) {
-        const upadatedProduct = productsRepository.findProductById(+req.params.id);
-        res.json(upadatedProduct);
+        const upadatedProduct = await productsService.findProductById(+req.params.id);
+        if (!upadatedProduct) {
+            res.status(404);
+        } else {
+            res.json(getProductViewModel(upadatedProduct));
+        }
     } else {
         res.status(404);
     }
 });
-productsRouter.delete('/:id', (req: Request, res: Response) => {
-    const isDeleted = productsRepository.deleteProduct(+req.params.id);
+productsRouter.delete('/:id',
+    authenticationMiddleware,
+    async (req: Request<UriParamsProductModel>, res: Response) => {
+    const isDeleted: boolean = await productsService.deleteProduct(+req.params.id);
 
     if (isDeleted) {
         res.sendStatus(200);

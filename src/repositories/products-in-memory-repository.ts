@@ -1,4 +1,6 @@
-let products = [
+import {ProductType} from "../types/types";
+
+let products: ProductType[] = [
     {
         id: 1,
         title: "tomato"
@@ -18,7 +20,7 @@ let products = [
 ];
 
 export const productsRepository = {
-    findProducts(title: string | undefined | null, count: number | undefined | null) {
+    async findProducts(title: string | undefined | null, count: number | undefined | null): Promise<ProductType[]> {
         let filteredProducts = products;
 
         if (title) {
@@ -31,11 +33,11 @@ export const productsRepository = {
 
         return filteredProducts;
     },
-    findProductById(id: number) {
+    async findProductById(id: number): Promise<ProductType | undefined> {
         const foundedProduct = products.find(p => p.id === id);
         return foundedProduct;
     },
-    createProduct(title: string) {
+    async createProduct(title: string): Promise<ProductType> {
         const newProduct = {
             id: +(new Date()),
             title: title
@@ -44,7 +46,7 @@ export const productsRepository = {
 
         return newProduct;
     },
-    updateProduct(id: number, title: string) {
+    async updateProduct(id: number, title: string): Promise<boolean> {
         let product = products.find(p => p.id === id);
         if (product) {
             product.title = title;
@@ -53,7 +55,7 @@ export const productsRepository = {
             return false;
         }
     },
-    deleteProduct(id: number) {
+    async deleteProduct(id: number): Promise<boolean> {
         for (let i = 0; i < products.length; i++) {
             if (products[i].id === id) {
                 products.splice(i,1);
